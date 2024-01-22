@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/MikeDragert/tinyapp/issues"
   },
-  "homepage": "https://github.com/MikeDragert/tinyapp#readme"
+  "homepage": "https://github.com/MikeDragert/tinyapp#readme",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
 }
