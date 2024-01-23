@@ -1,5 +1,8 @@
 const express = require("express");
+const cookieParser = require('cookie-parser');
+
 const app = express();
+app.use(cookieParser());
 const PORT = 8080;
 
 app.set("view engine", "ejs");
@@ -12,11 +15,6 @@ const urlDatabase = {
 
 const STRINGLENGTH = 6;
 const AVAILABLECHARS = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-
-
-// app.get("/", (req, res) => {
-//   res.send("Hello!");
-// });
 
 app.listen(PORT, () => {
   console.log(`Exampleapp listening on port ${PORT}!`);
@@ -35,16 +33,11 @@ const generateRandomString = function() {
   return returnString;
 };
 
-
-// app.get("/urls.json", (req, res) => {
-//   res.json(urlDatabase);
-// });
 app.post("/urls", (req, res) => {
   console.log(req.body);
   //todo:  should check that the random short url is not already in list.
   //todo:  may want to check that the given long url is not already in list too!
   let newShortUrl = generateRandomString();
-
   console.log(newShortUrl);
   urlDatabase[newShortUrl] = req.body.longURL;
   res.redirect("/u/" + newShortUrl);
@@ -52,23 +45,31 @@ app.post("/urls", (req, res) => {
 
 
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase };
+  const usernameFromCookie = req.cookies["username"];
+  const templateVars = { username: usernameFromCookie,
+                         urls: urlDatabase };
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req,res) => {
-  res.render("urls_new");
+  let usernameFromCookie = req.body.username;
+  const templateVars = { username: usernameFromCookie };
+  res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:id", (req, res) => {
   let id = req.params.id;
+  const usernameFromCookie = req.cookies["username"];
   const invalidUrl = (urlDatabase[id] === undefined);
   if (invalidUrl) {
     res.status = 404;
-    const templateVars = {id};
+    const templateVars = {username: usernameFromCookie,
+                          id};
     res.render("urls_notFound", templateVars);
   }
-  const templateVars = { id: id, longURL: urlDatabase[req.params.id]};
+  const templateVars = { username: usernameFromCookie,
+                         id,
+                         longURL: urlDatabase[req.params.id]};
   res.render("urls_show", templateVars);
 });
 
@@ -91,12 +92,19 @@ app.post("/urls/:id/update", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  let username = req.body.loginusername;
-  res.cookie("username", username);
+  let usernameFromBody = req.body.username;
+  res.cookie("username", usernameFromBody);
+  res.redirect("/urls");
+});
+
+app.post("/logout", (req, res) => {
+  res.clearCookie("username");
   res.redirect("/urls");
 });
 
 app.get("/hello", (req, res) => {
-  const templateVars = {greeting: "Hello World!"};
+  const usernameFromCookie = req.cookies["username"];
+  const templateVars = {username: usernameFromCookie,
+                        greeting: "Hello World!"};
   res.render("hello_world", templateVars);
 });
