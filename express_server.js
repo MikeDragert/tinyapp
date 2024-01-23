@@ -33,16 +33,21 @@ const generateRandomString = function() {
   return returnString;
 };
 
-app.post("/urls", (req, res) => {
-  console.log(req.body);
-  //todo:  should check that the random short url is not already in list.
-  //todo:  may want to check that the given long url is not already in list too!
-  let newShortUrl = generateRandomString();
-  console.log(newShortUrl);
-  urlDatabase[newShortUrl] = req.body.longURL;
-  res.redirect("/u/" + newShortUrl);
-});
+const isValidLongUrl = function(longUrl) {
+  return ((longUrl.length > 0) && (!Object.values(urlDatabase).includes(longUrl)));
+};
 
+app.post("/urls", (req, res) => {
+  let newLongUrl =  req.body.longURL;
+  if (isValidLongUrl(newLongUrl)) {
+    let newShortUrl = generateRandomString();
+    while (urlDatabase[newShortUrl] !== undefined) {
+      newShortUrl = generateRandomString();
+    }
+    urlDatabase[newShortUrl] = newLongUrl;
+  }
+  res.redirect("/urls");
+});
 
 app.get("/urls", (req, res) => {
   const usernameFromCookie = req.cookies["username"];
@@ -85,7 +90,7 @@ app.post("/urls/:id/delete", (req, res) => {
 
 app.post("/urls/:id/update", (req, res) => {
   let newLongUrl = req.body.longURL;
-  if (newLongUrl.length > 0) {
+  if (isValidLongUrl(newLongUrl)) {
     urlDatabase[req.params.id] = req.body.longURL;
   }
   res.redirect("/urls");
@@ -93,7 +98,9 @@ app.post("/urls/:id/update", (req, res) => {
 
 app.post("/login", (req, res) => {
   let usernameFromBody = req.body.username;
-  res.cookie("username", usernameFromBody);
+  if ((usernameFromBody) && (usernameFromBody.length > 0)) {
+    res.cookie("username", usernameFromBody);
+  }
   res.redirect("/urls");
 });
 
