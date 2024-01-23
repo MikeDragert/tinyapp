@@ -47,7 +47,12 @@ app.post("/urls", (req, res) => {
 
   console.log(newShortUrl);
   urlDatabase[newShortUrl] = req.body.longURL;
-  res.send("Ok");
+  res.redirect("/u/" + newShortUrl);
+});
+
+app.get("/u/:id", (req, res) => {
+  let longURL = "/urls/" + req.params.id;
+  res.redirect(longURL);
 });
 
 app.get("/urls", (req, res) => {
@@ -60,7 +65,14 @@ app.get("/urls/new", (req,res) => {
 });
 
 app.get("/urls/:id", (req, res) => {
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id]};
+  let id = req.params.id;
+  const invalidUrl = (urlDatabase[id] === undefined);
+  if (invalidUrl) {
+    res.status = 404;
+    const templateVars = {id};
+    res.render("urls_notFound", templateVars);
+  }
+  const templateVars = { id: id, longURL: urlDatabase[req.params.id]};
   res.render("urls_show", templateVars);
 });
 
