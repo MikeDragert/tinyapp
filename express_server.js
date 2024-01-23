@@ -73,8 +73,8 @@ app.get("/urls/:id", (req, res) => {
 });
 
 app.get("/u/:id", (req, res) => {
-  let longURL = "/urls/" + req.params.id;
-  res.redirect(longURL);
+  let longUrl = "/urls/" + req.params.id;
+  res.redirect(longUrl);
 });
 
 app.post("/urls/:id/delete", (req, res) => {
@@ -82,6 +82,13 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect("/urls");
 });
 
+app.post("/urls/:id/update", (req, res) => {
+  let newLongUrl = req.body.longURL;
+  if (newLongUrl.length > 0) {
+    urlDatabase[req.params.id] = req.body.longURL;
+  }
+  res.redirect("/urls");
+});
 
 app.get("/hello", (req, res) => {
   const templateVars = {greeting: "Hello World!"};
