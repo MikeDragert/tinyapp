@@ -90,6 +90,12 @@ app.post("/urls/:id/update", (req, res) => {
   res.redirect("/urls");
 });
 
+app.post("/login", (req, res) => {
+  let username = req.body.loginusername;
+  res.cookie("username", username);
+  res.redirect("/urls");
+});
+
 app.get("/hello", (req, res) => {
   const templateVars = {greeting: "Hello World!"};
   res.render("hello_world", templateVars);
