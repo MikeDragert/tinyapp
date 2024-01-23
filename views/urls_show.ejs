@@ -27,7 +27,7 @@
         </p>
         <form method="POST" action="/urls/<%- id %>/update">
           New URL: 
-          <input name="longURL" />
+          <input name="longURL" id="<%= id %>" value="<%= longURL %>" size="50"/>
           <button type="submit" class="btn btn-primary">Submit</button>
         </form>
       </div>
