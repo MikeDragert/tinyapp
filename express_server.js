@@ -88,15 +88,23 @@ app.post("/urls/:id/update", (req, res) => {
   res.redirect("/urls");
 });
 
+app.get("/login", (req, res) => {
+  const userIdFromCookie = req.cookies["user_id"];
+  const user = getUserById(userIdFromCookie);
+  const templateVars = { user: user };
+  res.render("login", templateVars);
+})
+
 app.post("/login", (req, res) => {
-  let usernameFromBody = req.body.username;
-  //todo:  going to have to come back to this...
-  //       check if the useremail exists, 
-  //       check if the password is right
-  //       then login if ok
-  // if ((usernameFromBody) && (usernameFromBody.length > 0)) {
-  //   res.cookie("username", usernameFromBody);
+  let userData = req.body;
+  
+  // let { newUser, error} = createIdAddUser(userData);
+  // console.log(newUser);
+  // console.log(error);
+  // if (error) {
+  //   res.status(400).send("Invalid user details. "+ error);
   // }
+  res.cookie("user_id", newUser.id);
   res.redirect("/urls");
 });
 
