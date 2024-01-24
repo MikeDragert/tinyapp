@@ -18,14 +18,14 @@
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
         <div style="position:absolute; right:50px">
           <form method="POST" 
-                action=<% if ((username) && (username.length > 0) && (username !== "undefined")) { %>
+                action=<% if ((user) && (user.email)) { %>
                   "/logout"
                   <% } else { %>
                   "/login" 
                   <% } %>
                   ">
-            <% if ((username) && (username.length > 0) && (username !== "undefined")) { %>
-              <h5>Logged in as: <%= username %> User!
+            <% if ((user) && (user.email)) { %>
+              <h5>Logged in as: <%= user.email %> User!
               <button type="submit" class="btn btn-primary">Logout</button></h5>
             <% } else { %>
             <input type="text" size="30" name="username" id=""/>

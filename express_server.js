@@ -1,5 +1,6 @@
 const express = require("express");
 const cookieParser = require('cookie-parser');
+const {generateRandomString, createIdAddUser, getUserById} = require('./handlers/handlers');
 
 const app = express();
 app.use(cookieParser());
@@ -13,25 +14,11 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
-const STRINGLENGTH = 6;
-const AVAILABLECHARS = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
 
 app.listen(PORT, () => {
   console.log(`Exampleapp listening on port ${PORT}!`);
 });
-
-const generateRandomCharacter = function() {
-  const randomIndex = Math.floor((Math.random() * AVAILABLECHARS.length));
-  return AVAILABLECHARS[randomIndex];
-};
-
-const generateRandomString = function() {
-  let returnString = "";
-  while (returnString.length < STRINGLENGTH) {
-    returnString += generateRandomCharacter();
-  }
-  return returnString;
-};
 
 const isValidLongUrl = function(longUrl) {
   return ((longUrl.length > 0) && (!Object.values(urlDatabase).includes(longUrl)));
@@ -50,29 +37,32 @@ app.post("/urls", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  const usernameFromCookie = req.cookies["username"];
-  const templateVars = { username: usernameFromCookie,
+  const userIdFromCookie = req.cookies["user_id"];
+  const user = getUserById(userIdFromCookie);
+  const templateVars = { user: user,
                          urls: urlDatabase };
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req,res) => {
-  let usernameFromCookie = req.body.username;
-  const templateVars = { username: usernameFromCookie };
+  const userIdFromCookie = req.cookies["user_id"];
+  const user = getUserById(userIdFromCookie);
+  const templateVars = { user: user };
   res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:id", (req, res) => {
   let id = req.params.id;
-  const usernameFromCookie = req.cookies["username"];
+  const userIdFromCookie = req.cookies["user_id"];
+  const user = getUserById(userIdFromCookie);
   const invalidUrl = (urlDatabase[id] === undefined);
   if (invalidUrl) {
     res.status = 404;
-    const templateVars = {username: usernameFromCookie,
+    const templateVars = { user: user,
                           id};
     res.render("urls_notFound", templateVars);
   }
-  const templateVars = { username: usernameFromCookie,
+  const templateVars = { user: user,
                          id,
                          longURL: urlDatabase[req.params.id]};
   res.render("urls_show", templateVars);
@@ -98,26 +88,38 @@ app.post("/urls/:id/update", (req, res) => {
 
 app.post("/login", (req, res) => {
   let usernameFromBody = req.body.username;
-  if ((usernameFromBody) && (usernameFromBody.length > 0)) {
-    res.cookie("username", usernameFromBody);
-  }
+  //todo:  going to have to come back to this...
+  //       check if the useremail exists, 
+  //       check if the password is right
+  //       then login if ok
+  // if ((usernameFromBody) && (usernameFromBody.length > 0)) {
+  //   res.cookie("username", usernameFromBody);
+  // }
   res.redirect("/urls");
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie("username");
+  res.clearCookie("user_id");
   res.redirect("/urls");
 });
 
 app.get("/register", (req, res) => {
-  let usernameFromCookie = req.body.username;
-  const templateVars = { username: usernameFromCookie };
+  const templateVars = { user: undefined };
   res.render("register",templateVars);
 });
 
+app.post("/register", (req, res) => {
+  let userData = req.body;
+  //todo:  need to check status here
+  let newUser = createIdAddUser(userData);
+  res.cookie("user_id", newUser.id);
+  res.redirect("/urls");
+});
+
 app.get("/hello", (req, res) => {
-  const usernameFromCookie = req.cookies["username"];
-  const templateVars = {username: usernameFromCookie,
+  let id = req.params.id;
+  const user = getUserById(userIdFromCookie);
+  const templateVars = {user: user,
                         greeting: "Hello World!"};
   res.render("hello_world", templateVars);
 });
