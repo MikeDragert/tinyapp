@@ -89,4 +89,4 @@ const getUserById = function(id) {
   return users[id];
 }
 
-module.exports = { generateRandomString, createIdAddUser, getUserById}
+module.exports = { generateRandomString, createIdAddUser, getUserById, getUserByEmail}

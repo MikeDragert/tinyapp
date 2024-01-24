@@ -1,6 +1,6 @@
 const express = require("express");
 const cookieParser = require('cookie-parser');
-const {generateRandomString, createIdAddUser, getUserById} = require('./handlers/handlers');
+const {generateRandomString, createIdAddUser, getUserById, getUserByEmail } = require('./handlers/handlers');
 
 const app = express();
 app.use(cookieParser());
@@ -97,15 +97,14 @@ app.get("/login", (req, res) => {
 
 app.post("/login", (req, res) => {
   let userData = req.body;
-  
-  // let { newUser, error} = createIdAddUser(userData);
-  // console.log(newUser);
-  // console.log(error);
-  // if (error) {
-  //   res.status(400).send("Invalid user details. "+ error);
-  // }
-  res.cookie("user_id", newUser.id);
-  res.redirect("/urls");
+  let user = getUserByEmail(userData.email);
+  if (user) {
+    if (user.password == req.password) {
+      res.cookie("user_id", user.id);
+      res.redirect("/urls");
+    }
+  }
+  res.redirect("/login");
 });
 
 app.post("/logout", (req, res) => {

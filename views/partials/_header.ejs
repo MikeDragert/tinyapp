@@ -15,20 +15,22 @@
     <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
       <div class="navbar-nav">
         <a class="nav-item nav-link" href="/urls">My URLs</a>
-        <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
-        <a class="nav-item nav-link" href="/register">Register</a>
-        
-        <div style="position:absolute; right:50px">
-            <% if ((user) && (user.email)) { %>
-              <form action="/logout" method="POST">
-                <h5>Logged in as: <%= user.email %> User! 
-                    <button type="submit" class="btn btn-primary">Logout</button>
-                </h5>
-              </form>
-            <% } else { %>
-              <a class="nav-item nav-link" href="/login">Login</a>
-            <% }%>
-          </form>
+        <a class="nav-item nav-link" href="/urls/new">Create New URL</a>        
+        <div style="position:absolute; right:175px">
+          <% if (!((user) && (user.email))) { %>
+          <a class="nav-item nav-link" href="/login">Login</a>
+          <% }%>
+        </div>
+        <div style="position:absolute; right:75px">
+          <% if ((user) && (user.email)) { %>
+            <form action="/logout" method="POST">
+              <h5>Logged in as: <%= user.email %> User! 
+                <button type="submit" class="btn btn-primary">Logout</button>
+              </h5>
+            </form>
+          <% } else { %>
+            <a class="nav-item nav-link" href="/register">Register</a>
+          <% }%>
         </div>
       </div>
     </div>
