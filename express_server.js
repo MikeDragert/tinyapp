@@ -57,7 +57,7 @@ app.get("/urls/:id", (req, res) => {
   const user = getUserById(userIdFromCookie);
   const invalidUrl = (urlDatabase[id] === undefined);
   if (invalidUrl) {
-    //todo:  use consisten error display for 400, 404
+    //todo:  use consistent error display for 400, 403, 404
     
     res.status = 404;
     const templateVars = { user: user,
@@ -98,18 +98,17 @@ app.get("/login", (req, res) => {
 app.post("/login", (req, res) => {
   let userData = req.body;
   let user = getUserByEmail(userData.email);
-  if (user) {
-    if (user.password == req.password) {
-      res.cookie("user_id", user.id);
-      res.redirect("/urls");
-    }
+  //todo:  use consistent error display for 400, 403, 404
+  if ((!user) || (user.password !== userData.password)) {
+    res.status(403).send("Invalid login credentials");
   }
-  res.redirect("/login");
+  res.cookie("user_id", user.id);
+  res.redirect("/urls");
 });
 
 app.post("/logout", (req, res) => {
   res.clearCookie("user_id");
-  res.redirect("/urls");
+  res.redirect("/login");
 });
 
 app.get("/register", (req, res) => {

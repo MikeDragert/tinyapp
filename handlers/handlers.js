@@ -18,7 +18,6 @@ const users = {
   }
 }
 
-
 const STRINGLENGTH = 6;
 const AVAILABLECHARS = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
