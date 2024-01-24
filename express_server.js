@@ -109,6 +109,12 @@ app.post("/logout", (req, res) => {
   res.redirect("/urls");
 });
 
+app.get("/register", (req, res) => {
+  let usernameFromCookie = req.body.username;
+  const templateVars = { username: usernameFromCookie };
+  res.render("register",templateVars);
+});
+
 app.get("/hello", (req, res) => {
   const usernameFromCookie = req.cookies["username"];
   const templateVars = {username: usernameFromCookie,
