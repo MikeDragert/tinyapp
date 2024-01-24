@@ -57,6 +57,8 @@ app.get("/urls/:id", (req, res) => {
   const user = getUserById(userIdFromCookie);
   const invalidUrl = (urlDatabase[id] === undefined);
   if (invalidUrl) {
+    //todo:  use consisten error display for 400, 404
+    
     res.status = 404;
     const templateVars = { user: user,
                           id};
@@ -110,8 +112,12 @@ app.get("/register", (req, res) => {
 
 app.post("/register", (req, res) => {
   let userData = req.body;
-  //todo:  need to check status here
-  let newUser = createIdAddUser(userData);
+  let { newUser, error} = createIdAddUser(userData);
+  console.log(newUser);
+  console.log(error);
+  if (error) {
+    res.status(400).send("Invalid user details. "+ error);
+  }
   res.cookie("user_id", newUser.id);
   res.redirect("/urls");
 });

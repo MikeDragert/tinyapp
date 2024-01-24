@@ -1,3 +1,5 @@
+const e = require("express");
+
 const users = {
   "g8Nd6e": {
     id: "g8Nd6e",
@@ -42,9 +44,22 @@ const generateNewShortUrl = function() {
 }
 
 const validateUserData = function(userData) {
-  //todo:  make sure not blank
-  //todo:  make sure it doesn't already exists!
-  return (userData.email && userData.password);
+  if (userData.email && userData.password) {
+    if (getUserByEmail(userData.email)){
+      return { valid: false, message: "User already exists!"};
+    }
+    return { valid: true, message: "valid"};
+  }
+  return { valid: false, message: "Invalid data specified!"};
+}
+
+const getUserByEmail = function(email) {
+  for(const userKey in users) {
+    if (users[userKey].email === email) {      
+      return users[userKey];
+    }
+  }
+  return undefined;
 }
 
 const generateNewUserId = function() {
@@ -56,14 +71,16 @@ const generateNewUserId = function() {
 }
 
 const createIdAddUser = function(userData) {
-  let userId;
-  if (validateUserData(userData)) {
-    userId = generateNewUserId();
+  let { valid, message } = validateUserData(userData);
+  if (valid) {
+    let userId = generateNewUserId();
     users[userId] = {id: userId,
                      email: userData.email,
                      password: userData.password };
+    return {newUser: users[userId], error: undefined};
+  } else {
+    return {newUser: undefined, error: message}
   }
-  return users[userId];
 }
 
 const getUserById = function(id) {
