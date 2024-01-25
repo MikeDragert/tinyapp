@@ -57,17 +57,15 @@ app.get("/urls/:id", (req, res) => {
   const user = getUserById(userIdFromCookie);
   const invalidUrl = (urlDatabase[id] === undefined);
   if (invalidUrl) {
-    //todo:  use consistent error display for 400, 403, 404
-    
-    res.status = 404;
     const templateVars = { user: user,
-                          id};
-    res.render("urls_notFound", templateVars);
+                           error: "The specified url " + id + " does not exist"};
+    res.status(404).render("urls_Error", templateVars);
+  } else {
+    const templateVars = { user: user,
+                          id,
+                          longURL: urlDatabase[req.params.id]};
+    res.render("urls_show", templateVars);
   }
-  const templateVars = { user: user,
-                         id,
-                         longURL: urlDatabase[req.params.id]};
-  res.render("urls_show", templateVars);
 });
 
 app.get("/u/:id", (req, res) => {
@@ -93,17 +91,19 @@ app.get("/login", (req, res) => {
   const user = getUserById(userIdFromCookie);
   const templateVars = { user: user };
   res.render("login", templateVars);
-})
+});
 
 app.post("/login", (req, res) => {
   let userData = req.body;
   let user = getUserByEmail(userData.email);
-  //todo:  use consistent error display for 400, 403, 404
   if ((!user) || (user.password !== userData.password)) {
-    res.status(403).send("Invalid login credentials");
+    const templateVars = { user: user,
+                            error: "Invalid login credentials"};
+    res.status(403).render("urls_Error", templateVars);
+  } else {
+    res.cookie("user_id", user.id);
+    res.redirect("/urls");
   }
-  res.cookie("user_id", user.id);
-  res.redirect("/urls");
 });
 
 app.post("/logout", (req, res) => {
@@ -122,14 +122,17 @@ app.post("/register", (req, res) => {
   console.log(newUser);
   console.log(error);
   if (error) {
-    res.status(400).send("Invalid user details. "+ error);
+    const templateVars = { user: undefined,
+                          error: "Invalid user details: " + error};
+    res.status(400).render("urls_Error", templateVars);
+  } else {
+    res.cookie("user_id", newUser.id);
+    res.redirect("/urls");
   }
-  res.cookie("user_id", newUser.id);
-  res.redirect("/urls");
 });
 
 app.get("/hello", (req, res) => {
-  let id = req.params.id;
+  const userIdFromCookie = req.cookies["user_id"];
   const user = getUserById(userIdFromCookie);
   const templateVars = {user: user,
                         greeting: "Hello World!"};

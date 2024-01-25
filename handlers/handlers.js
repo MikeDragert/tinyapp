@@ -83,8 +83,6 @@ const createIdAddUser = function(userData) {
 }
 
 const getUserById = function(id) {
-  //todo, check that not blank
-  //    what to do if error
   return users[id];
 }
 
