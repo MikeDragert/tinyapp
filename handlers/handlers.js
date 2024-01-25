@@ -1,20 +1,21 @@
 const e = require("express");
+const bcrypt = require("bcrypt");
 
 const users = {
   "g8Nd6e": {
     id: "g8Nd6e",
     email: "user@example.com",
-    password: "monkey"
+    password: bcrypt.hashSync("monkey", 10)
   },
   "nJDE7z": {
     id: "nJDE7z",
     email: "user2@example.com",
-    password: "funk"
+    password: bcrypt.hashSync("funk", 10)
   },
   "qhrtGE": {
     id: "qhrtGE",
     email: "user3@example.com",
-    password: "dig"
+    password: bcrypt.hashSync("dig", 10)
   }
 };
 
@@ -133,7 +134,7 @@ const createIdAddUser = function(userData) {
     let userId = generateNewUserId();
     users[userId] = {id: userId,
       email: userData.email,
-      password: userData.password };
+      password: bcrypt.hashSync(userData.password, 10) };
     return {newUser: users[userId], error: undefined};
   } else {
     return {newUser: undefined, error: message};

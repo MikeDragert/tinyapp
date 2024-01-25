@@ -1,5 +1,7 @@
 const express = require("express");
 const cookieParser = require('cookie-parser');
+const bcrypt = require("bcrypt");
+
 const { generateRandomString,
   checkEditPermissionTrap,
   checkUserMatchPermissionTrap,
@@ -130,8 +132,8 @@ app.get("/login", (req, res) => {
 app.post("/login", (req, res) => {
   let userData = req.body;
   let user = getUserByEmail(userData.email);
-  if ((!user) || (user.password !== userData.password)) {
-    const templateVars = { user: user,
+  if ((!user) || (!bcrypt.compareSync(userData.password, user.password))) {
+    const templateVars = { user: undefined,
                             error: "Invalid login credentials"};
     res.status(403).render("urls_Error", templateVars);
   } else {
