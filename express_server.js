@@ -1,5 +1,5 @@
 const express = require("express");
-const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
 const bcrypt = require("bcrypt");
 
 const { generateRandomString,
@@ -17,7 +17,12 @@ const { generateRandomString,
 const { escapeXML } = require("ejs");
 
 const app = express();
-app.use(cookieParser());
+app.use(cookieSession(
+  {
+    name: 'session',
+    keys: ['keyABC', 'keyDEF','keyXYZ']
+  }
+));
 const PORT = 8080;
 
 app.set("view engine", "ejs");
@@ -33,7 +38,7 @@ const isValidLongUrl = function(userID, longUrl) {
 };
 
 app.post("/urls", (req, res) => {
-  const userIdFromCookie = req.cookies["user_id"];
+  const userIdFromCookie = req.session.user_id;
   const user = getUserById(userIdFromCookie);
   if (checkEditPermissionTrap(user, res)) {
     let newLongUrl =  req.body.longURL;
@@ -49,7 +54,8 @@ app.post("/urls", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  const userIdFromCookie = req.cookies["user_id"];
+  let userIdFromCookie = "";;
+  userIdFromCookie = req.session.user_id;
   const user = getUserById(userIdFromCookie);
   const userID = user ? user.id : "";
   const templateVars = { user: user,
@@ -58,7 +64,7 @@ app.get("/urls", (req, res) => {
 });
 
 app.get("/urls/new", (req,res) => {
-  const userIdFromCookie = req.cookies["user_id"];
+  const userIdFromCookie = req.session.user_id;
   const user = getUserById(userIdFromCookie);
   if (!user) {
     res.redirect("/login");
@@ -70,7 +76,7 @@ app.get("/urls/new", (req,res) => {
 
 app.get("/urls/:id", (req, res) => {
   let id = req.params.id;
-  const userIdFromCookie = req.cookies["user_id"];
+  const userIdFromCookie = req.session.user_id;
   const user = getUserById(userIdFromCookie);
   const invalidUrl = (getUrlFromShortUrl(id) === undefined);
   if (invalidUrl) {
@@ -95,7 +101,7 @@ app.get("/u/:id", (req, res) => {
 });
 
 app.post("/urls/:id/delete", (req, res) => {
-  const userIdFromCookie = req.cookies["user_id"];
+  const userIdFromCookie = req.session.user_id;
   const user = getUserById(userIdFromCookie);
   if (checkEditPermissionTrap(user, res)) {
     if (checkUserMatchPermissionTrap(user, req.params.id, res)) {
@@ -106,7 +112,7 @@ app.post("/urls/:id/delete", (req, res) => {
 });
 
 app.post("/urls/:id/update", (req, res) => {
-  const userIdFromCookie = req.cookies["user_id"];
+  const userIdFromCookie = req.session.user_id;
   const user = getUserById(userIdFromCookie);
   if (checkEditPermissionTrap(user, res)) {
     if (checkUserMatchPermissionTrap(user, req.params.id, res)) {
@@ -120,7 +126,7 @@ app.post("/urls/:id/update", (req, res) => {
 });
 
 app.get("/login", (req, res) => {
-  const userIdFromCookie = req.cookies["user_id"];
+  const userIdFromCookie = req.session.user_id;
   const user = getUserById(userIdFromCookie);
   if (user) {
     res.redirect("/urls");
@@ -137,18 +143,18 @@ app.post("/login", (req, res) => {
                             error: "Invalid login credentials"};
     res.status(403).render("urls_Error", templateVars);
   } else {
-    res.cookie("user_id", user.id);
+    req.session.user_id = user.id;
     res.redirect("/urls");
   }
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie("user_id");
+  req.session = null;
   res.redirect("/login");
 });
 
 app.get("/register", (req, res) => {
-  const userIdFromCookie = req.cookies["user_id"];
+  const userIdFromCookie = req.session.user_id;
   const user = getUserById(userIdFromCookie);
   if (user) {
     res.redirect("/urls");
@@ -165,13 +171,13 @@ app.post("/register", (req, res) => {
                           error: "Invalid user details: " + error};
     res.status(400).render("urls_Error", templateVars);
   } else {
-    res.cookie("user_id", newUser.id);
+    req.session.user_id = newUser.id;
     res.redirect("/urls");
   }
 });
 
 app.get("/hello", (req, res) => {
-  const userIdFromCookie = req.cookies["user_id"];
+  const userIdFromCookie = req.session.user_id;
   const user = getUserById(userIdFromCookie);
   const templateVars = {user: user,
                         greeting: "Hello World!"};
