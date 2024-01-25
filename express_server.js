@@ -1,6 +1,7 @@
 const express = require("express");
 const cookieParser = require('cookie-parser');
 const {generateRandomString, createIdAddUser, getUserById, getUserByEmail } = require('./handlers/handlers');
+const { escapeXML } = require("ejs");
 
 const app = express();
 app.use(cookieParser());
@@ -14,6 +15,16 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+const checkEditPermissionTrap = function (user, res) {
+  if (!user) {
+    const templateVars = { user: user,
+                           error: "Not authorized to edit urls"};
+    res.render("urls_Error", templateVars);
+    console.log("return false");
+    return false;
+  }
+  return true;
+}
 
 
 app.listen(PORT, () => {
@@ -25,15 +36,19 @@ const isValidLongUrl = function(longUrl) {
 };
 
 app.post("/urls", (req, res) => {
-  let newLongUrl =  req.body.longURL;
-  if (isValidLongUrl(newLongUrl)) {
-    let newShortUrl = generateRandomString();
-    while (urlDatabase[newShortUrl] !== undefined) {
-      newShortUrl = generateRandomString();
+  const userIdFromCookie = req.cookies["user_id"];
+  const user = getUserById(userIdFromCookie);
+  if (checkEditPermissionTrap(user, res)) {
+    let newLongUrl =  req.body.longURL;
+    if (isValidLongUrl(newLongUrl)) {
+      let newShortUrl = generateRandomString();
+      while (urlDatabase[newShortUrl] !== undefined) {
+        newShortUrl = generateRandomString();
+      }
+      urlDatabase[newShortUrl] = newLongUrl;
     }
-    urlDatabase[newShortUrl] = newLongUrl;
+    res.redirect("/urls");
   }
-  res.redirect("/urls");
 });
 
 app.get("/urls", (req, res) => {
@@ -47,8 +62,12 @@ app.get("/urls", (req, res) => {
 app.get("/urls/new", (req,res) => {
   const userIdFromCookie = req.cookies["user_id"];
   const user = getUserById(userIdFromCookie);
-  const templateVars = { user: user };
-  res.render("urls_new", templateVars);
+  if (!user) {
+    res.redirect("/login");
+  } else {
+    const templateVars = { user: user };
+    res.render("urls_new", templateVars);
+  }
 });
 
 app.get("/urls/:id", (req, res) => {
@@ -74,21 +93,32 @@ app.get("/u/:id", (req, res) => {
 });
 
 app.post("/urls/:id/delete", (req, res) => {
-  delete urlDatabase[req.params.id];
-  res.redirect("/urls");
+  const userIdFromCookie = req.cookies["user_id"];
+  const user = getUserById(userIdFromCookie);
+  if (checkEditPermissionTrap(user, res)) {
+    delete urlDatabase[req.params.id];
+    res.redirect("/urls");
+  }
 });
 
 app.post("/urls/:id/update", (req, res) => {
-  let newLongUrl = req.body.longURL;
-  if (isValidLongUrl(newLongUrl)) {
-    urlDatabase[req.params.id] = req.body.longURL;
+  const userIdFromCookie = req.cookies["user_id"];
+  const user = getUserById(userIdFromCookie);
+  if (checkEditPermissionTrap(user, res)) {
+    let newLongUrl = req.body.longURL;
+    if (isValidLongUrl(newLongUrl)) {
+      urlDatabase[req.params.id] = req.body.longURL;
+    }
+    res.redirect("/urls");
   }
-  res.redirect("/urls");
 });
 
 app.get("/login", (req, res) => {
   const userIdFromCookie = req.cookies["user_id"];
   const user = getUserById(userIdFromCookie);
+  if (user) {
+    res.redirect("/urls");
+  }
   const templateVars = { user: user };
   res.render("login", templateVars);
 });
@@ -112,7 +142,12 @@ app.post("/logout", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
-  const templateVars = { user: undefined };
+  const userIdFromCookie = req.cookies["user_id"];
+  const user = getUserById(userIdFromCookie);
+  if (user) {
+    res.redirect("/urls");
+  }
+  const templateVars = { user: user };
   res.render("register",templateVars);
 });
 
