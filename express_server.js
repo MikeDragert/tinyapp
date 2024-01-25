@@ -3,8 +3,8 @@ const cookieSession = require('cookie-session');
 const bcrypt = require("bcrypt");
 
 const { generateRandomString,
-  checkEditPermissionTrap,
-  checkUserMatchPermissionTrap,
+  userHasPermissionToEdit,
+  isCorrectUserToEdit,
   getUrlFromShortUrl,
   setUrlWithShortUrl,
   deleteUrlWithShortUrl,
@@ -37,10 +37,17 @@ const isValidLongUrl = function(userID, longUrl) {
   return ((longUrl.length > 0) && (!Object.values(getUserUrls(userID)).includes(longUrl)));
 };
 
+const renderError = function(res, user, error) {
+  const templateVars = { user: user,
+                         error: error};
+  res.render("urls_Error", templateVars);
+}
+
 app.post("/urls", (req, res) => {
   const userIdFromCookie = req.session.user_id;
   const user = getUserById(userIdFromCookie);
-  if (checkEditPermissionTrap(user, res)) {
+  if (userHasPermissionToEdit(user, (user, error) => {
+      renderError(res, user, error)})) {
     let newLongUrl =  req.body.longURL;
     if (isValidLongUrl(user.id, newLongUrl)) {
       let newShortUrl = generateRandomString();
@@ -103,8 +110,10 @@ app.get("/u/:id", (req, res) => {
 app.post("/urls/:id/delete", (req, res) => {
   const userIdFromCookie = req.session.user_id;
   const user = getUserById(userIdFromCookie);
-  if (checkEditPermissionTrap(user, res)) {
-    if (checkUserMatchPermissionTrap(user, req.params.id, res)) {
+  if (userHasPermissionToEdit(user, (user, error) => {
+      renderError(res, user, error)})) {
+    if (isCorrectUserToEdit(user, req.params.id, (user, error) => {
+        renderError(res, user, error)})) {
       deleteUrlWithShortUrl(req.params.id);
       res.redirect("/urls");
     }
@@ -114,8 +123,10 @@ app.post("/urls/:id/delete", (req, res) => {
 app.post("/urls/:id/update", (req, res) => {
   const userIdFromCookie = req.session.user_id;
   const user = getUserById(userIdFromCookie);
-  if (checkEditPermissionTrap(user, res)) {
-    if (checkUserMatchPermissionTrap(user, req.params.id, res)) {
+  if (userHasPermissionToEdit(user, (user, error) => {
+      renderError(res, user, error)})) {
+    if (isCorrectUserToEdit(user, req.params.id, (user, error) => {
+        renderError(res, user, error)})) {
       let newLongUrl = req.body.longURL;
       if (isValidLongUrl(user.id, newLongUrl)) {
         setUrlWithShortUrl(req.params.id, {longURL: req.body.longURL, userID: user.id});

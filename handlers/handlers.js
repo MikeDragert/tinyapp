@@ -54,21 +54,17 @@ const generateNewShortUrl = function() {
   return newShortUrl;
 };
 
-const checkEditPermissionTrap = function(user, res) {
+const userHasPermissionToEdit = function(user, callback) {
   if (!user) {
-    const templateVars = { user: user,
-      error: "Not authorized to edit urls"};
-    res.render("urls_Error", templateVars);
+    callback(user, "Not authorized to edit urls");
     return false;
   }
   return true;
 };
 
-const checkUserMatchPermissionTrap = function(user, shortUrl, res) {
+const isCorrectUserToEdit = function(user, shortUrl, callback) {
   if (user.id !== getUrlFromShortUrl(shortUrl).userID) {
-    const templateVars = { user: user,
-      error: "Not correct person to edit this url"};
-    res.render("urls_Error", templateVars);
+    callback(user, "Not correct person to edit this url");
     return false;
   }
   return true;
@@ -146,8 +142,8 @@ const getUserById = function(id) {
 };
 
 module.exports = { generateRandomString,
-  checkEditPermissionTrap,
-  checkUserMatchPermissionTrap,
+  userHasPermissionToEdit,
+  isCorrectUserToEdit,
   getUrlFromShortUrl,
   setUrlWithShortUrl,
   deleteUrlWithShortUrl,
