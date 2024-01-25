@@ -84,8 +84,12 @@ app.get("/urls/:id", (req, res) => {
 });
 
 app.get("/u/:id", (req, res) => {
-  let longUrl = "/urls/" + req.params.id;
-  res.redirect(longUrl);
+  const url = getUrlFromShortUrl(req.params.id);
+  if ((url) && (url.longURL)) {
+    res.redirect(url.longURL);
+  } else {
+    res.redirect("/urls")
+  }
 });
 
 app.post("/urls/:id/delete", (req, res) => {
