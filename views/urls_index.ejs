@@ -25,10 +25,13 @@
           </tr>
         </thead>
         <tbody>
+          <% if (!user) { %>
+            <tr><td colspan=4><h3>Please login to see your urls</h3></td></tr>
+          <% } else { %>
           <% for (let id in urls) { %>
             <tr>
               <td><%= id %></td>
-              <td><%= urls[id] %></td>
+              <td><%= urls[id].longURL %></td>
               <td><form method="GET" action="/urls/<%- id %>">
                 <button class="btn btn-primary">Edit</button>
               </form></td>
@@ -36,7 +39,7 @@
                 <button type="submit" class="btn btn-primary">Delete</button>
               </form></td>
             </tr>
-          <% } %>
+          <% }} %>
         </tbody>
       </table>
     </main>

@@ -1,6 +1,17 @@
 const express = require("express");
 const cookieParser = require('cookie-parser');
-const {generateRandomString, createIdAddUser, getUserById, getUserByEmail } = require('./handlers/handlers');
+const { generateRandomString,
+  checkEditPermissionTrap,
+  checkUserMatchPermissionTrap,
+  getUrlFromShortUrl,
+  setUrlWithShortUrl,
+  deleteUrlWithShortUrl,
+  getAllUrls,
+  getUserUrls,
+  createIdAddUser,
+  getUserById,
+  getUserByEmail } = require('./handlers/handlers');
+
 const { escapeXML } = require("ejs");
 
 const app = express();
@@ -10,29 +21,13 @@ const PORT = 8080;
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true}));
 
-const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
-};
-
-const checkEditPermissionTrap = function (user, res) {
-  if (!user) {
-    const templateVars = { user: user,
-                           error: "Not authorized to edit urls"};
-    res.render("urls_Error", templateVars);
-    console.log("return false");
-    return false;
-  }
-  return true;
-}
-
 
 app.listen(PORT, () => {
   console.log(`Exampleapp listening on port ${PORT}!`);
 });
 
-const isValidLongUrl = function(longUrl) {
-  return ((longUrl.length > 0) && (!Object.values(urlDatabase).includes(longUrl)));
+const isValidLongUrl = function(userID, longUrl) {
+  return ((longUrl.length > 0) && (!Object.values(getUserUrls(userID)).includes(longUrl)));
 };
 
 app.post("/urls", (req, res) => {
@@ -40,12 +35,12 @@ app.post("/urls", (req, res) => {
   const user = getUserById(userIdFromCookie);
   if (checkEditPermissionTrap(user, res)) {
     let newLongUrl =  req.body.longURL;
-    if (isValidLongUrl(newLongUrl)) {
+    if (isValidLongUrl(user.id, newLongUrl)) {
       let newShortUrl = generateRandomString();
-      while (urlDatabase[newShortUrl] !== undefined) {
+      while (getUrlFromShortUrl(newShortUrl) !== undefined) {
         newShortUrl = generateRandomString();
       }
-      urlDatabase[newShortUrl] = newLongUrl;
+      setUrlWithShortUrl(newShortUrl, {longURL: newLongUrl, userID: user.id});
     }
     res.redirect("/urls");
   }
@@ -54,8 +49,9 @@ app.post("/urls", (req, res) => {
 app.get("/urls", (req, res) => {
   const userIdFromCookie = req.cookies["user_id"];
   const user = getUserById(userIdFromCookie);
+  const userID = user ? user.id : "";
   const templateVars = { user: user,
-                         urls: urlDatabase };
+                         urls: getUserUrls(userID) };
   res.render("urls_index", templateVars);
 });
 
@@ -74,7 +70,7 @@ app.get("/urls/:id", (req, res) => {
   let id = req.params.id;
   const userIdFromCookie = req.cookies["user_id"];
   const user = getUserById(userIdFromCookie);
-  const invalidUrl = (urlDatabase[id] === undefined);
+  const invalidUrl = (getUrlFromShortUrl(id) === undefined);
   if (invalidUrl) {
     const templateVars = { user: user,
                            error: "The specified url " + id + " does not exist"};
@@ -82,7 +78,7 @@ app.get("/urls/:id", (req, res) => {
   } else {
     const templateVars = { user: user,
                           id,
-                          longURL: urlDatabase[req.params.id]};
+                          longURL: getUrlFromShortUrl(req.params.id).longURL};
     res.render("urls_show", templateVars);
   }
 });
@@ -96,8 +92,10 @@ app.post("/urls/:id/delete", (req, res) => {
   const userIdFromCookie = req.cookies["user_id"];
   const user = getUserById(userIdFromCookie);
   if (checkEditPermissionTrap(user, res)) {
-    delete urlDatabase[req.params.id];
-    res.redirect("/urls");
+    if (checkUserMatchPermissionTrap(user, req.params.id, res)) {
+      deleteUrlWithShortUrl(req.params.id);
+      res.redirect("/urls");
+    }
   }
 });
 
@@ -105,11 +103,13 @@ app.post("/urls/:id/update", (req, res) => {
   const userIdFromCookie = req.cookies["user_id"];
   const user = getUserById(userIdFromCookie);
   if (checkEditPermissionTrap(user, res)) {
-    let newLongUrl = req.body.longURL;
-    if (isValidLongUrl(newLongUrl)) {
-      urlDatabase[req.params.id] = req.body.longURL;
+    if (checkUserMatchPermissionTrap(user, req.params.id, res)) {
+      let newLongUrl = req.body.longURL;
+      if (isValidLongUrl(user.id, newLongUrl)) {
+        setUrlWithShortUrl(req.params.id, {longURL: req.body.longURL, userID: user.id});
+      }
+      res.redirect("/urls");
     }
-    res.redirect("/urls");
   }
 });
 
@@ -154,8 +154,6 @@ app.get("/register", (req, res) => {
 app.post("/register", (req, res) => {
   let userData = req.body;
   let { newUser, error} = createIdAddUser(userData);
-  console.log(newUser);
-  console.log(error);
   if (error) {
     const templateVars = { user: undefined,
                           error: "Invalid user details: " + error};
