@@ -2,7 +2,10 @@ const express = require("express");
 const cookieSession = require('cookie-session');
 const bcrypt = require("bcrypt");
 
-const { generateRandomString,
+const {
+  users, 
+  urlDatabase,
+  generateRandomString,
   userHasPermissionToEdit,
   isCorrectUserToEdit,
   getUrlFromShortUrl,
@@ -12,7 +15,7 @@ const { generateRandomString,
   getUserUrls,
   createIdAddUser,
   getUserById,
-  getUserByEmail } = require('./handlers/handlers');
+  getUserByEmail } = require('./handlers/helpers');
 
 const { escapeXML } = require("ejs");
 
@@ -45,7 +48,7 @@ const renderError = function(res, user, error) {
 
 app.post("/urls", (req, res) => {
   const userIdFromCookie = req.session.user_id;
-  const user = getUserById(userIdFromCookie);
+  const user = getUserById(userIdFromCookie, users);
   if (userHasPermissionToEdit(user, (user, error) => {
       renderError(res, user, error)})) {
     let newLongUrl =  req.body.longURL;
@@ -53,7 +56,7 @@ app.post("/urls", (req, res) => {
       let newShortUrl = generateRandomString();
       while (getUrlFromShortUrl(newShortUrl) !== undefined) {
         newShortUrl = generateRandomString();
-      }
+      }isCorrectUserToEdit
       setUrlWithShortUrl(newShortUrl, {longURL: newLongUrl, userID: user.id});
     }
     res.redirect("/urls");
@@ -63,7 +66,7 @@ app.post("/urls", (req, res) => {
 app.get("/urls", (req, res) => {
   let userIdFromCookie = "";;
   userIdFromCookie = req.session.user_id;
-  const user = getUserById(userIdFromCookie);
+  const user = getUserById(userIdFromCookie, users);
   const userID = user ? user.id : "";
   const templateVars = { user: user,
                          urls: getUserUrls(userID) };
@@ -72,7 +75,7 @@ app.get("/urls", (req, res) => {
 
 app.get("/urls/new", (req,res) => {
   const userIdFromCookie = req.session.user_id;
-  const user = getUserById(userIdFromCookie);
+  const user = getUserById(userIdFromCookie, users);
   if (!user) {
     res.redirect("/login");
   } else {
@@ -84,7 +87,7 @@ app.get("/urls/new", (req,res) => {
 app.get("/urls/:id", (req, res) => {
   let id = req.params.id;
   const userIdFromCookie = req.session.user_id;
-  const user = getUserById(userIdFromCookie);
+  const user = getUserById(userIdFromCookie, users);
   const invalidUrl = (getUrlFromShortUrl(id) === undefined);
   if (invalidUrl) {
     const templateVars = { user: user,
@@ -109,7 +112,7 @@ app.get("/u/:id", (req, res) => {
 
 app.post("/urls/:id/delete", (req, res) => {
   const userIdFromCookie = req.session.user_id;
-  const user = getUserById(userIdFromCookie);
+  const user = getUserById(userIdFromCookie, users);
   if (userHasPermissionToEdit(user, (user, error) => {
       renderError(res, user, error)})) {
     if (isCorrectUserToEdit(user, req.params.id, (user, error) => {
@@ -122,7 +125,7 @@ app.post("/urls/:id/delete", (req, res) => {
 
 app.post("/urls/:id/update", (req, res) => {
   const userIdFromCookie = req.session.user_id;
-  const user = getUserById(userIdFromCookie);
+  const user = getUserById(userIdFromCookie, users);
   if (userHasPermissionToEdit(user, (user, error) => {
       renderError(res, user, error)})) {
     if (isCorrectUserToEdit(user, req.params.id, (user, error) => {
@@ -138,7 +141,7 @@ app.post("/urls/:id/update", (req, res) => {
 
 app.get("/login", (req, res) => {
   const userIdFromCookie = req.session.user_id;
-  const user = getUserById(userIdFromCookie);
+  const user = getUserById(userIdFromCookie, users);
   if (user) {
     res.redirect("/urls");
   }
@@ -148,7 +151,7 @@ app.get("/login", (req, res) => {
 
 app.post("/login", (req, res) => {
   let userData = req.body;
-  let user = getUserByEmail(userData.email);
+  let user = getUserByEmail(userData.email, users);
   if ((!user) || (!bcrypt.compareSync(userData.password, user.password))) {
     const templateVars = { user: undefined,
                             error: "Invalid login credentials"};
@@ -166,7 +169,7 @@ app.post("/logout", (req, res) => {
 
 app.get("/register", (req, res) => {
   const userIdFromCookie = req.session.user_id;
-  const user = getUserById(userIdFromCookie);
+  const user = getUserById(userIdFromCookie, users);
   if (user) {
     res.redirect("/urls");
   }
@@ -189,7 +192,7 @@ app.post("/register", (req, res) => {
 
 app.get("/hello", (req, res) => {
   const userIdFromCookie = req.session.user_id;
-  const user = getUserById(userIdFromCookie);
+  const user = getUserById(userIdFromCookie, users);
   const templateVars = {user: user,
                         greeting: "Hello World!"};
   res.render("hello_world", templateVars);

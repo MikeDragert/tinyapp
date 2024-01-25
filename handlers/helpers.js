@@ -107,10 +107,10 @@ const validateUserData = function(userData) {
   return { valid: false, message: "Invalid data specified!"};
 };
 
-const getUserByEmail = function(email) {
-  for (const userKey in users) {
-    if (users[userKey].email === email) {
-      return users[userKey];
+const getUserByEmail = function(email, database) {
+  for (const userKey in database) {
+    if (database[userKey].email === email) {
+      return database[userKey];
     }
   }
   return undefined;
@@ -137,11 +137,14 @@ const createIdAddUser = function(userData) {
   }
 };
 
-const getUserById = function(id) {
-  return users[id];
+const getUserById = function(id, database) {
+  return database[id];
 };
 
-module.exports = { generateRandomString,
+module.exports = { 
+  users, 
+  urlDatabase,
+  generateRandomString,
   userHasPermissionToEdit,
   isCorrectUserToEdit,
   getUrlFromShortUrl,
