@@ -3,7 +3,7 @@ const cookieSession = require('cookie-session');
 const bcrypt = require("bcrypt");
 
 const {
-  users, 
+  users,
   urlDatabase,
   generateRandomString,
   userHasPermissionToEdit,
@@ -30,6 +30,7 @@ const PORT = 8080;
 
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true}));
+app.use(express.json());
 
 
 app.listen(PORT, () => {
@@ -42,29 +43,40 @@ const isValidLongUrl = function(userID, longUrl) {
 
 const renderError = function(res, user, error) {
   const templateVars = { user: user,
-                         error: error};
-  res.render("urls_Error", templateVars);
-}
+                         error: error.message};
+  res.status(error.status).render("urls_Error", templateVars);
+};
 
 app.post("/urls", (req, res) => {
   const userIdFromCookie = req.session.user_id;
   const user = getUserById(userIdFromCookie, users);
   if (userHasPermissionToEdit(user, (user, error) => {
-      renderError(res, user, error)})) {
+      renderError(res, user, error);
+    })) {
     let newLongUrl =  req.body.longURL;
     if (isValidLongUrl(user.id, newLongUrl)) {
       let newShortUrl = generateRandomString();
       while (getUrlFromShortUrl(newShortUrl) !== undefined) {
         newShortUrl = generateRandomString();
-      }isCorrectUserToEdit
+      }
       setUrlWithShortUrl(newShortUrl, {longURL: newLongUrl, userID: user.id});
     }
     res.redirect("/urls");
   }
 });
 
+app.get("/", (req, res) => {
+  const userIdFromCookie = req.session.user_id;
+  const user = getUserById(userIdFromCookie, users);
+  if (!user) {
+    res.redirect("/login");
+  } else {
+    res.redirect("/urls");
+  }
+});
+
 app.get("/urls", (req, res) => {
-  let userIdFromCookie = "";;
+  let userIdFromCookie = "";
   userIdFromCookie = req.session.user_id;
   const user = getUserById(userIdFromCookie, users);
   const userID = user ? user.id : "";
@@ -94,10 +106,18 @@ app.get("/urls/:id", (req, res) => {
                            error: "The specified url " + id + " does not exist"};
     res.status(404).render("urls_Error", templateVars);
   } else {
-    const templateVars = { user: user,
-                          id,
-                          longURL: getUrlFromShortUrl(req.params.id).longURL};
-    res.render("urls_show", templateVars);
+    if (userHasPermissionToEdit(user, (user, error) => {
+        renderError(res, user, error);
+      })) {
+      if (isCorrectUserToEdit(user, req.params.id, (user, error) => {
+          renderError(res, user, error);
+        })) {
+        const templateVars = { user: user,
+                              id,
+                              longURL: getUrlFromShortUrl(req.params.id).longURL};
+        res.render("urls_show", templateVars);
+      }
+    }
   }
 });
 
@@ -106,7 +126,7 @@ app.get("/u/:id", (req, res) => {
   if ((url) && (url.longURL)) {
     res.redirect(url.longURL);
   } else {
-    res.redirect("/urls")
+    res.redirect("/urls");
   }
 });
 
@@ -114,9 +134,11 @@ app.post("/urls/:id/delete", (req, res) => {
   const userIdFromCookie = req.session.user_id;
   const user = getUserById(userIdFromCookie, users);
   if (userHasPermissionToEdit(user, (user, error) => {
-      renderError(res, user, error)})) {
+      renderError(res, user, error);
+    })) {
     if (isCorrectUserToEdit(user, req.params.id, (user, error) => {
-        renderError(res, user, error)})) {
+        renderError(res, user, error);
+      })) {
       deleteUrlWithShortUrl(req.params.id);
       res.redirect("/urls");
     }
@@ -127,9 +149,11 @@ app.post("/urls/:id/update", (req, res) => {
   const userIdFromCookie = req.session.user_id;
   const user = getUserById(userIdFromCookie, users);
   if (userHasPermissionToEdit(user, (user, error) => {
-      renderError(res, user, error)})) {
+      renderError(res, user, error);
+    })) {
     if (isCorrectUserToEdit(user, req.params.id, (user, error) => {
-        renderError(res, user, error)})) {
+        renderError(res, user, error);
+      })) {
       let newLongUrl = req.body.longURL;
       if (isValidLongUrl(user.id, newLongUrl)) {
         setUrlWithShortUrl(req.params.id, {longURL: req.body.longURL, userID: user.id});

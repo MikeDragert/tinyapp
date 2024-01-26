@@ -20,7 +20,7 @@ const users = {
 };
 
 const urlDatabase = {
-  "g8Nd6e": {
+  "b2xVn2": {
     longURL: "http://www.lighthouselabs.ca",
     userID: "g8Nd6e"
   },
@@ -56,7 +56,7 @@ const generateNewShortUrl = function() {
 
 const userHasPermissionToEdit = function(user, callback) {
   if (!user) {
-    callback(user, "Not authorized to edit urls");
+    callback(user, { status: 403, message: "Not authorized to edit urls" });
     return false;
   }
   return true;
@@ -64,7 +64,7 @@ const userHasPermissionToEdit = function(user, callback) {
 
 const isCorrectUserToEdit = function(user, shortUrl, callback) {
   if (user.id !== getUrlFromShortUrl(shortUrl).userID) {
-    callback(user, "Not correct person to edit this url");
+    callback(user,  { status: 403, message: "Not correct person to edit this url" });
     return false;
   }
   return true;
@@ -141,8 +141,8 @@ const getUserById = function(id, database) {
   return database[id];
 };
 
-module.exports = { 
-  users, 
+module.exports = {
+  users,
   urlDatabase,
   generateRandomString,
   userHasPermissionToEdit,
