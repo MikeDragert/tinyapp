@@ -5,17 +5,18 @@ const bcrypt = require("bcrypt");
 const {
   users,
   urlDatabase,
-  generateRandomString,
+  createNewURL,
   userHasPermissionToEdit,
   isCorrectUserToEdit,
   getUrlFromShortUrl,
-  setUrlWithShortUrl,
+  updateUrlWithShortUrl,
   deleteUrlWithShortUrl,
-  getAllUrls,
   getUserUrls,
-  createIdAddUser,
+  isValidLongUrl,
+  createUserWithNewId,
   getUserById,
-  getUserByEmail } = require('./handlers/helpers');
+  getUserByEmail,
+  getUserFromCookie } = require('./handlers/helpers');
 
 const { escapeXML } = require("ejs");
 
@@ -32,39 +33,14 @@ app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true}));
 app.use(express.json());
 
-
-app.listen(PORT, () => {
-  console.log(`Exampleapp listening on port ${PORT}!`);
-});
-
-const isValidLongUrl = function(userID, longUrl) {
-  return ((longUrl.length > 0) && (!Object.values(getUserUrls(userID)).includes(longUrl)));
-};
-
+// will render an error page with specified error message
 const renderError = function(res, user, error) {
   const templateVars = { user: user,
                          error: error.message};
   res.status(error.status).render("urls_Error", templateVars);
 };
 
-app.post("/urls", (req, res) => {
-  const userIdFromCookie = req.session.user_id;
-  const user = getUserById(userIdFromCookie, users);
-  if (userHasPermissionToEdit(user, (user, error) => {
-      renderError(res, user, error);
-    })) {
-    let newLongUrl =  req.body.longURL;
-    if (isValidLongUrl(user.id, newLongUrl)) {
-      let newShortUrl = generateRandomString();
-      while (getUrlFromShortUrl(newShortUrl) !== undefined) {
-        newShortUrl = generateRandomString();
-      }
-      setUrlWithShortUrl(newShortUrl, {longURL: newLongUrl, userID: user.id});
-    }
-    res.redirect("/urls");
-  }
-});
-
+// redirect appropiately if not given a url
 app.get("/", (req, res) => {
   const userIdFromCookie = req.session.user_id;
   const user = getUserById(userIdFromCookie, users);
@@ -75,19 +51,34 @@ app.get("/", (req, res) => {
   }
 });
 
+// show url list for user
 app.get("/urls", (req, res) => {
-  let userIdFromCookie = "";
-  userIdFromCookie = req.session.user_id;
-  const user = getUserById(userIdFromCookie, users);
+  const user = getUserFromCookie(req.session);
   const userID = user ? user.id : "";
   const templateVars = { user: user,
                          urls: getUserUrls(userID) };
   res.render("urls_index", templateVars);
 });
 
+// update url list for user by adding submitted url info
+app.post("/urls", (req, res) => {
+  const user = getUserFromCookie(req.session);;
+  if (userHasPermissionToEdit(user, (user, error) => {
+      renderError(res, user, error);
+    })) {
+    let newLongUrl =  req.body.longURL;
+    if (isValidLongUrl(user.id, newLongUrl)) {
+      createNewURL(newLongUrl, user.id);
+      res.redirect("/urls/" + newShortUrl);
+    } else {
+      res.redirect("/urls");
+    }
+  }
+});
+
+// show a page for getting new url information
 app.get("/urls/new", (req,res) => {
-  const userIdFromCookie = req.session.user_id;
-  const user = getUserById(userIdFromCookie, users);
+  const user = getUserFromCookie(req.session);
   if (!user) {
     res.redirect("/login");
   } else {
@@ -96,15 +87,13 @@ app.get("/urls/new", (req,res) => {
   }
 });
 
+// show a page for editing one specified url
 app.get("/urls/:id", (req, res) => {
   let id = req.params.id;
-  const userIdFromCookie = req.session.user_id;
-  const user = getUserById(userIdFromCookie, users);
+  const user = getUserFromCookie(req.session);
   const invalidUrl = (getUrlFromShortUrl(id) === undefined);
   if (invalidUrl) {
-    const templateVars = { user: user,
-                           error: "The specified url " + id + " does not exist"};
-    res.status(404).render("urls_Error", templateVars);
+    renderError(res, user, { status: 404, message: "The specified url " + id + " does not exist"});
   } else {
     if (userHasPermissionToEdit(user, (user, error) => {
         renderError(res, user, error);
@@ -121,6 +110,7 @@ app.get("/urls/:id", (req, res) => {
   }
 });
 
+// redirect short url to saved long url
 app.get("/u/:id", (req, res) => {
   const url = getUrlFromShortUrl(req.params.id);
   if ((url) && (url.longURL)) {
@@ -130,9 +120,9 @@ app.get("/u/:id", (req, res) => {
   }
 });
 
+// delete a given url
 app.post("/urls/:id/delete", (req, res) => {
-  const userIdFromCookie = req.session.user_id;
-  const user = getUserById(userIdFromCookie, users);
+  const user = getUserFromCookie(req.session);
   if (userHasPermissionToEdit(user, (user, error) => {
       renderError(res, user, error);
     })) {
@@ -145,9 +135,9 @@ app.post("/urls/:id/delete", (req, res) => {
   }
 });
 
+// update a given url
 app.post("/urls/:id/update", (req, res) => {
-  const userIdFromCookie = req.session.user_id;
-  const user = getUserById(userIdFromCookie, users);
+  const user = getUserFromCookie(req.session);
   if (userHasPermissionToEdit(user, (user, error) => {
       renderError(res, user, error);
     })) {
@@ -156,16 +146,16 @@ app.post("/urls/:id/update", (req, res) => {
       })) {
       let newLongUrl = req.body.longURL;
       if (isValidLongUrl(user.id, newLongUrl)) {
-        setUrlWithShortUrl(req.params.id, {longURL: req.body.longURL, userID: user.id});
+        updateUrlWithShortUrl(req.params.id, {longURL: req.body.longURL, userID: user.id});
       }
       res.redirect("/urls");
     }
   }
 });
 
+// present login page
 app.get("/login", (req, res) => {
-  const userIdFromCookie = req.session.user_id;
-  const user = getUserById(userIdFromCookie, users);
+  const user = getUserFromCookie(req.session);
   if (user) {
     res.redirect("/urls");
   }
@@ -173,27 +163,27 @@ app.get("/login", (req, res) => {
   res.render("login", templateVars);
 });
 
+// handle login request
 app.post("/login", (req, res) => {
   let userData = req.body;
   let user = getUserByEmail(userData.email, users);
   if ((!user) || (!bcrypt.compareSync(userData.password, user.password))) {
-    const templateVars = { user: undefined,
-                            error: "Invalid login credentials"};
-    res.status(403).render("urls_Error", templateVars);
+    renderError(res, undefined, { status: 403, message: "Invalid login credentials" });
   } else {
     req.session.user_id = user.id;
     res.redirect("/urls");
   }
 });
 
+// handle logout request
 app.post("/logout", (req, res) => {
   req.session = null;
   res.redirect("/login");
 });
 
+// present a user registration page
 app.get("/register", (req, res) => {
-  const userIdFromCookie = req.session.user_id;
-  const user = getUserById(userIdFromCookie, users);
+  const user = getUserFromCookie(req.session);
   if (user) {
     res.redirect("/urls");
   }
@@ -201,23 +191,26 @@ app.get("/register", (req, res) => {
   res.render("register",templateVars);
 });
 
+// handle user registration
 app.post("/register", (req, res) => {
   let userData = req.body;
-  let { newUser, error} = createIdAddUser(userData);
-  if (error) {
-    const templateVars = { user: undefined,
-                          error: "Invalid user details: " + error};
-    res.status(400).render("urls_Error", templateVars);
-  } else {
+  let newUser = createUserWithNewId(userData,  (user, error) => {
+    renderError(res, user, error);
+  });
+  if (newUser) {
     req.session.user_id = newUser.id;
     res.redirect("/urls");
   }
 });
 
+// basic hello world
 app.get("/hello", (req, res) => {
-  const userIdFromCookie = req.session.user_id;
-  const user = getUserById(userIdFromCookie, users);
+  const user = getUserFromCookie(req.session);
   const templateVars = {user: user,
                         greeting: "Hello World!"};
   res.render("hello_world", templateVars);
+});
+
+app.listen(PORT, () => {
+  console.log(`Exampleapp listening on port ${PORT}!`);
 });

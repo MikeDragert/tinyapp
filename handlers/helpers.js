@@ -33,11 +33,13 @@ const urlDatabase = {
 const STRINGLENGTH = 6;
 const AVAILABLECHARS = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
+// generate one random character
 const generateRandomCharacter = function() {
   const randomIndex = Math.floor((Math.random() * AVAILABLECHARS.length));
   return AVAILABLECHARS[randomIndex];
 };
 
+// generate a randome string of STRINGLENGTH
 const generateRandomString = function() {
   let returnString = "";
   while (returnString.length < STRINGLENGTH) {
@@ -46,6 +48,7 @@ const generateRandomString = function() {
   return returnString;
 };
 
+// generate a new short url that is unique
 const generateNewShortUrl = function() {
   let newShortUrl = generateRandomString();
   while (urlDatabase[newShortUrl] !== undefined) {
@@ -54,6 +57,8 @@ const generateNewShortUrl = function() {
   return newShortUrl;
 };
 
+// user has edit permission
+//  execute callback if not
 const userHasPermissionToEdit = function(user, callback) {
   if (!user) {
     callback(user, { status: 403, message: "Not authorized to edit urls" });
@@ -62,6 +67,8 @@ const userHasPermissionToEdit = function(user, callback) {
   return true;
 };
 
+// is is authorized to edit this specific url
+//  execute callback if not
 const isCorrectUserToEdit = function(user, shortUrl, callback) {
   if (user.id !== getUrlFromShortUrl(shortUrl).userID) {
     callback(user,  { status: 403, message: "Not correct person to edit this url" });
@@ -70,23 +77,30 @@ const isCorrectUserToEdit = function(user, shortUrl, callback) {
   return true;
 };
 
+// return the url data with the shortUrl key
 const getUrlFromShortUrl = function(shortUrl) {
   return urlDatabase[shortUrl];
 };
 
-const setUrlWithShortUrl = function(shortUrl, urlInfo) {
+// update the url data with the shortUrl key
+const updateUrlWithShortUrl = function(shortUrl, urlInfo) {
   urlDatabase[shortUrl] = {longURL: urlInfo.longURL,
     userID: urlInfo.userID};
 };
 
+//create a new url for the given long url and user id
+// generates a new unique short url key to use
+const createNewURL = function(longURL, userID) {
+  newShortUrl = generateNewShortUrl();
+  updateUrlWithShortUrl(newShortUrl, {longURL: longURL, userID: userID});
+}
+
+// delete the url data with the shortUrl key
 const deleteUrlWithShortUrl = function(shortUrl) {
   delete urlDatabase[shortUrl];
 };
 
-const getAllUrls = function() {
-  return urlDatabase;
-};
-
+// get all url data for the user
 const getUserUrls = function(userID) {
   let returnUrls = {};
   for (const urlKey in urlDatabase) {
@@ -97,9 +111,22 @@ const getUserUrls = function(userID) {
   return returnUrls;
 };
 
+// return true if the user already has an url with this long url
+const userHasLongUrl = function(userID, longUrl) {
+  const userUrlList = Object.values(getUserUrls(userID));
+  return (userUrlList.some( url => (url.longURL === longUrl)));
+}
+
+//validate if a user can use a given longUrl
+const isValidLongUrl = function(userID, longUrl) {
+  return ((longUrl.length > 0) && 
+          (!userHasLongUrl(userID, longUrl)))
+}
+
+// validate the given user data is ok to use
 const validateUserData = function(userData) {
   if (userData.email && userData.password) {
-    if (getUserByEmail(userData.email)) {
+    if (getUserByEmail(userData.email, users)) {
       return { valid: false, message: "User already exists!"};
     }
     return { valid: true, message: "valid"};
@@ -107,6 +134,7 @@ const validateUserData = function(userData) {
   return { valid: false, message: "Invalid data specified!"};
 };
 
+// get user by email
 const getUserByEmail = function(email, database) {
   for (const userKey in database) {
     if (database[userKey].email === email) {
@@ -116,6 +144,7 @@ const getUserByEmail = function(email, database) {
   return undefined;
 };
 
+// generate a new unique user id
 const generateNewUserId = function() {
   let newUserId = generateRandomString();
   while (users[newUserId] !== undefined) {
@@ -124,34 +153,45 @@ const generateNewUserId = function() {
   return newUserId;
 };
 
-const createIdAddUser = function(userData) {
+// attempt to create a new user with the given data
+//  if there is an error, call the callback
+const createUserWithNewId = function(userData, callback) {
   let { valid, message } = validateUserData(userData);
   if (valid) {
     let userId = generateNewUserId();
     users[userId] = {id: userId,
-      email: userData.email,
-      password: bcrypt.hashSync(userData.password, 10) };
-    return {newUser: users[userId], error: undefined};
+                     email: userData.email,
+                     password: bcrypt.hashSync(userData.password, 10) };
+    return users[userId];
   } else {
-    return {newUser: undefined, error: message};
+    callback(userData, { status: 400, message: "Invalid user details: " + message });
+    return {};
   }
 };
 
+//  get user with the given id
 const getUserById = function(id, database) {
   return database[id];
 };
 
+// lookup and return the user that was specified in the cookie
+const getUserFromCookie = function(sessionCookie) {
+  const userIdFromCookie = sessionCookie.user_id;
+  return getUserById(userIdFromCookie, users);
+}
+
 module.exports = {
   users,
   urlDatabase,
-  generateRandomString,
+  createNewURL,
   userHasPermissionToEdit,
   isCorrectUserToEdit,
   getUrlFromShortUrl,
-  setUrlWithShortUrl,
+  updateUrlWithShortUrl,
   deleteUrlWithShortUrl,
-  getAllUrls,
   getUserUrls,
-  createIdAddUser,
+  isValidLongUrl,
+  createUserWithNewId,
   getUserById,
-  getUserByEmail };
+  getUserByEmail,
+  getUserFromCookie };
