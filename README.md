@@ -24,6 +24,7 @@ As this was for demonstration purposes, data is kept in memory and reset when th
 - EJS
 - bcrypt.js
 - cookie-session
+- method-override
 
 ## Getting Started
 
