@@ -25,7 +25,7 @@
         <p>
           <h5>Edit</h5>
         </p>
-        <form method="POST" action="/urls/<%- id %>/update">
+        <form method="POST" action="/urls/<%- id %>?_method=PUT">
           New URL: 
           <input name="longURL" id="<%= id %>" value="<%= longURL %>" size="50"/>
           <button type="submit" class="btn btn-primary">Submit</button>

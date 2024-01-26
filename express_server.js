@@ -1,6 +1,7 @@
 const express = require("express");
 const cookieSession = require('cookie-session');
 const bcrypt = require("bcrypt");
+const methodOverride = require('method-override');
 
 const {
   users,
@@ -32,6 +33,7 @@ const PORT = 8080;
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true}));
 app.use(express.json());
+app.use(methodOverride('_method'));
 
 // will render an error page with specified error message
 const renderError = function(res, user, error) {
@@ -62,13 +64,13 @@ app.get("/urls", (req, res) => {
 
 // update url list for user by adding submitted url info
 app.post("/urls", (req, res) => {
-  const user = getUserFromCookie(req.session);;
+  const user = getUserFromCookie(req.session);
   if (userHasPermissionToEdit(user, (user, error) => {
       renderError(res, user, error);
     })) {
     let newLongUrl =  req.body.longURL;
     if (isValidLongUrl(user.id, newLongUrl)) {
-      createNewURL(newLongUrl, user.id);
+      const newShortUrl = createNewURL(newLongUrl, user.id);
       res.redirect("/urls/" + newShortUrl);
     } else {
       res.redirect("/urls");
@@ -121,7 +123,7 @@ app.get("/u/:id", (req, res) => {
 });
 
 // delete a given url
-app.post("/urls/:id/delete", (req, res) => {
+app.delete("/urls/:id", (req, res) => {
   const user = getUserFromCookie(req.session);
   if (userHasPermissionToEdit(user, (user, error) => {
       renderError(res, user, error);
@@ -136,7 +138,7 @@ app.post("/urls/:id/delete", (req, res) => {
 });
 
 // update a given url
-app.post("/urls/:id/update", (req, res) => {
+app.put("/urls/:id", (req, res) => {
   const user = getUserFromCookie(req.session);
   if (userHasPermissionToEdit(user, (user, error) => {
       renderError(res, user, error);

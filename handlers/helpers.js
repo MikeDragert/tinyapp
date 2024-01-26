@@ -91,9 +91,10 @@ const updateUrlWithShortUrl = function(shortUrl, urlInfo) {
 //create a new url for the given long url and user id
 // generates a new unique short url key to use
 const createNewURL = function(longURL, userID) {
-  newShortUrl = generateNewShortUrl();
+  let newShortUrl = generateNewShortUrl();
   updateUrlWithShortUrl(newShortUrl, {longURL: longURL, userID: userID});
-}
+  return newShortUrl;
+};
 
 // delete the url data with the shortUrl key
 const deleteUrlWithShortUrl = function(shortUrl) {
@@ -114,14 +115,14 @@ const getUserUrls = function(userID) {
 // return true if the user already has an url with this long url
 const userHasLongUrl = function(userID, longUrl) {
   const userUrlList = Object.values(getUserUrls(userID));
-  return (userUrlList.some( url => (url.longURL === longUrl)));
-}
+  return (userUrlList.some(url => (url.longURL === longUrl)));
+};
 
 //validate if a user can use a given longUrl
 const isValidLongUrl = function(userID, longUrl) {
-  return ((longUrl.length > 0) && 
-          (!userHasLongUrl(userID, longUrl)))
-}
+  return ((longUrl.length > 0) &&
+          (!userHasLongUrl(userID, longUrl)));
+};
 
 // validate the given user data is ok to use
 const validateUserData = function(userData) {
@@ -160,8 +161,8 @@ const createUserWithNewId = function(userData, callback) {
   if (valid) {
     let userId = generateNewUserId();
     users[userId] = {id: userId,
-                     email: userData.email,
-                     password: bcrypt.hashSync(userData.password, 10) };
+      email: userData.email,
+      password: bcrypt.hashSync(userData.password, 10) };
     return users[userId];
   } else {
     callback(userData, { status: 400, message: "Invalid user details: " + message });
@@ -178,7 +179,7 @@ const getUserById = function(id, database) {
 const getUserFromCookie = function(sessionCookie) {
   const userIdFromCookie = sessionCookie.user_id;
   return getUserById(userIdFromCookie, users);
-}
+};
 
 module.exports = {
   users,
