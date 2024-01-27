@@ -5,7 +5,6 @@ const methodOverride = require('method-override');
 
 const {
   users,
-  urlDatabase,
   createNewURL,
   userHasPermissionToEdit,
   isCorrectUserToEdit,
@@ -18,8 +17,6 @@ const {
   getUserById,
   getUserByEmail,
   getUserFromCookie } = require('./handlers/helpers');
-
-const { escapeXML } = require("ejs");
 
 const app = express();
 app.use(cookieSession(
@@ -37,8 +34,10 @@ app.use(methodOverride('_method'));
 
 // will render an error page with specified error message
 const renderError = function(res, user, error) {
-  const templateVars = { user: user,
-                         error: error.message};
+  const templateVars = {
+    user: user,
+    error: error.message
+  };
   res.status(error.status).render("urls_Error", templateVars);
 };
 
@@ -57,8 +56,10 @@ app.get("/", (req, res) => {
 app.get("/urls", (req, res) => {
   const user = getUserFromCookie(req.session);
   const userID = user ? user.id : "";
-  const templateVars = { user: user,
-                         urls: getUserUrls(userID) };
+  const templateVars = {
+    user: user,
+    urls: getUserUrls(userID)
+  };
   res.render("urls_index", templateVars);
 });
 
@@ -67,7 +68,7 @@ app.post("/urls", (req, res) => {
   const user = getUserFromCookie(req.session);
   if (userHasPermissionToEdit(user, (user, error) => {
       renderError(res, user, error);
-    })) {
+  })) {
     let newLongUrl =  req.body.longURL;
     if (isValidLongUrl(user.id, newLongUrl)) {
       const newShortUrl = createNewURL(newLongUrl, user.id);
@@ -99,13 +100,15 @@ app.get("/urls/:id", (req, res) => {
   } else {
     if (userHasPermissionToEdit(user, (user, error) => {
         renderError(res, user, error);
-      })) {
+    })) {
       if (isCorrectUserToEdit(user, req.params.id, (user, error) => {
           renderError(res, user, error);
-        })) {
-        const templateVars = { user: user,
-                              id,
-                              longURL: getUrlFromShortUrl(req.params.id).longURL};
+      })) {
+        const templateVars = {
+          user: user,
+          id,
+          longURL: getUrlFromShortUrl(req.params.id).longURL
+        };
         res.render("urls_show", templateVars);
       }
     }
@@ -127,10 +130,10 @@ app.delete("/urls/:id", (req, res) => {
   const user = getUserFromCookie(req.session);
   if (userHasPermissionToEdit(user, (user, error) => {
       renderError(res, user, error);
-    })) {
+  })) {
     if (isCorrectUserToEdit(user, req.params.id, (user, error) => {
         renderError(res, user, error);
-      })) {
+    })) {
       deleteUrlWithShortUrl(req.params.id);
       res.redirect("/urls");
     }
@@ -142,10 +145,10 @@ app.put("/urls/:id", (req, res) => {
   const user = getUserFromCookie(req.session);
   if (userHasPermissionToEdit(user, (user, error) => {
       renderError(res, user, error);
-    })) {
+  })) {
     if (isCorrectUserToEdit(user, req.params.id, (user, error) => {
         renderError(res, user, error);
-      })) {
+    })) {
       let newLongUrl = req.body.longURL;
       if (isValidLongUrl(user.id, newLongUrl)) {
         updateUrlWithShortUrl(req.params.id, {longURL: req.body.longURL, userID: user.id});
@@ -203,14 +206,6 @@ app.post("/register", (req, res) => {
     req.session.user_id = newUser.id;
     res.redirect("/urls");
   }
-});
-
-// basic hello world
-app.get("/hello", (req, res) => {
-  const user = getUserFromCookie(req.session);
-  const templateVars = {user: user,
-                        greeting: "Hello World!"};
-  res.render("hello_world", templateVars);
 });
 
 app.listen(PORT, () => {

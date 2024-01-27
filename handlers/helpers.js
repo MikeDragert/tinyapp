@@ -1,4 +1,3 @@
-const e = require("express");
 const bcrypt = require("bcrypt");
 
 const users = {
@@ -127,6 +126,7 @@ const isValidLongUrl = function(userID, longUrl) {
 // validate the given user data is ok to use
 const validateUserData = function(userData) {
   if (userData.email && userData.password) {
+    console.log(userData);
     if (getUserByEmail(userData.email, users)) {
       return { valid: false, message: "User already exists!"};
     }
@@ -160,13 +160,15 @@ const createUserWithNewId = function(userData, callback) {
   let { valid, message } = validateUserData(userData);
   if (valid) {
     let userId = generateNewUserId();
-    users[userId] = {id: userId,
+    users[userId] = {
+      id: userId,
       email: userData.email,
-      password: bcrypt.hashSync(userData.password, 10) };
+      password: bcrypt.hashSync(userData.password, 10)
+    };
     return users[userId];
   } else {
-    callback(userData, { status: 400, message: "Invalid user details: " + message });
-    return {};
+    callback(undefined, { status: 400, message: "Invalid user details: " + message });
+    return undefined;
   }
 };
 
